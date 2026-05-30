@@ -1,0 +1,27 @@
+# Progreso del curso
+
+- [ ] Sección 1
+- [ ] Sección 2
+- [ ] Sección 3
+- [ ] Sección 4
+- [ ] Sección 5
+- [ ] Sección 6
+- [ ] Sección 7
+- [ ] Sección 8
+- [ ] Sección 9
+- [ ] Sección 10
+- [ ] Sección 11
+- [ ] Sección 12
+- [ ] Sección 13
+- [ ] Sección 14
+- [ ] Sección 15
+- [ ] Sección 16
+- [ ] Sección 17
+- [ ] Sección 18
+- [ ] Sección 19
+- [ ] Sección 20
+- [ ] Sección 21
+- [ ] Sección 22
+- [ ] Bonus 23
+- [ ] Bonus 24
+- [ ] Bonus 25

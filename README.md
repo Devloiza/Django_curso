@@ -1,7 +1,7 @@
 # Progreso del curso
 
-- [ ] Sección 1
-- [ ] Sección 2
+- [x] Sección 1
+- [x] Sección 2
 - [ ] Sección 3
 - [ ] Sección 4
 - [ ] Sección 5

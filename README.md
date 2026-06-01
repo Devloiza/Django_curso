@@ -3,7 +3,7 @@
 - [x] Sección 1
 - [x] Sección 2
 - [x] Sección 3
-- [ ] Sección 4
+- [x] Sección 4
 - [ ] Sección 5
 - [ ] Sección 6
 - [ ] Sección 7

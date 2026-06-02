@@ -4,7 +4,7 @@
 - [x] Sección 2
 - [x] Sección 3
 - [x] Sección 4
-- [ ] Sección 5
+- [x] Sección 5
 - [ ] Sección 6
 - [ ] Sección 7
 - [ ] Sección 8

@@ -397,6 +397,33 @@ STATICFILES_DIRS = [
 ]
 ```
 
+# Sección 6: Proyecto 1
+## Agrupamiento de apps
+Se debe crear la carpeta llamadas ```apps``` a nivel proyecto, ahí meteremos todas las apps para que quede más ordenado.
+Para que funcione adecuadamente en los ```settings.py``` del proyecto debemos declarar la app pero con la carpeta incluida:
+```
+INSTALLED_APPS = [
+    # Algo como esto:
+    'apps.courses',
+    'apps.dashboard',
+    'apps.profiles',
+
+    # Las que ya están por default:
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+]
+```
+E igualmente se debe configurar en los ```apps.py``` de la app:
+```
+class CoursesConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.courses'
+```
+
 # Algunos comandos de terminal útiles
 Para leer el txt en la terminal:
 ```

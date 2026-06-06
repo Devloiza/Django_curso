@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle del curso{% endblock title %}
+
+{% block custom_styles %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+{% endblock custom_styles %}
+{% block content %}
+    <div class="layout">
+
+        {% include 'includes/sidebar.html' %}
+
+        <!-- Main content -->
+        <div class="main-content">
+            <!-- Header -->
+            {% include 'includes/header.html' %}
+
+            <!-- Aquí va el contenido de la página -->
+            <main>
+                <!-- === COURSE OVERVIEW === -->
+                <div class="course-layout">
+                    <!-- Accordion del curso -->
+                    <div class="course-sections">
+                        <h2>Contenido del curso</h2>
+                        <div class="accordion">
+                            
+                            {% for section in course.course_content %}
+                                <div class="accordion-item">
+                                    <button class="accordion-header">Sección {{section.id}}: {{ section.name }}</button>
+                                    <div class="accordion-content">
+                                        <ul>
+                                            
+                                            {% for lesson in section.lessons %}
+                                                                                               
+                                                <li><i class="fa-solid 
+                                                    {% if  lesson.type == 'video' %} fa-video {% else %} fa-file {% endif %}
+                                                    "></i>{{ lesson.name }}</li>
+                                            
+                                            {% endfor %}
+
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <!-- Agrega más secciones similares -->
+                        </div>
+                    </div>
+
+                    <!-- Card lateral -->
+                    <div class="course-info-card">
+                        <div class="card-banner">
+                            <div class="tag">{devilearn}</div>
+                            <img src="{% static course.course_image %}" alt="Curso Django" />
+                            <img class="author-avatar" src="https://randomuser.me/api/portraits/men/15.jpg" alt="Autor">
+                        </div>
+                        <div class="card-body">
+                            <h3>Acerca de este curso</h3>
+                            <ul class="course-details">
+                                <li><i class="fa-solid fa-file"></i> {{ course.info_course.lessons }} clases</li>
+                                <li><i class="fa-solid fa-video"></i> {{ course.info_course.duration}} horas de contenido en video</li>
+                                <li><i class="fa-solid fa-graduation-cap"></i> {{ course.info_course.instructor }}</li>
+                            </ul>
+                            <a class="btn bnt-primary btn-course" href="{% url course.course_link %}">Continuar aprendiendo</a>
+
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+{% endblock content %}
+{% block scripts %}
+    <script src="{% static 'js/script.js' %}"></script>
+{% endblock scripts %}

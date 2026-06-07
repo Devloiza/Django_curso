@@ -6,7 +6,7 @@
 - [x] Sección 4
 - [x] Sección 5
 - [x] Sección 6 - Proyecto v1
-- [ ] Sección 7
+- [x] Sección 7
 - [ ] Sección 8
 - [ ] Sección 9
 - [ ] Sección 10

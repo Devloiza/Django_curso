@@ -424,6 +424,95 @@ class CoursesConfig(AppConfig):
     name = 'apps.courses'
 ```
 
+# Sección 7: Modelos y bases de datos
+## Modelar datos
+Es el proceso de representar estructuradamente la información de un sistema, anticipando como se ca a almacenar, consultar y relacionar la información.
+
+### Los pasos para el diseño de una base de datos son:
+1. Determinación del propósito y requisitos
+2. Diseño conceptual
+    a. Creación del Modelo Entidad-Relación (MER)
+    b. Normalización
+3. Diseño lógico
+    a. Tranformación de MER a un Modelo Relacional
+4. Diseño físico
+5. Implenentación
+6. Pruebas y evaluación
+7. Mantenimiento y evaluación
+
+## Entidad, atributo y relación
+|Concepto|Definición|Ejemplo|
+|:-:|:-:|:-:|
+|Entidad|Objeto del mundo real representado en el sistema|Book, Author, Review|
+|Atributo|Característica o propiedad de una entidad|Book.title, Author.name |
+|Relación|Asociación entre entidades|Un Book está escrito por un Author|
+
+## ORM (Object-Relational Mapping)
+Es como un traductor de un lenguaje de programación a SQL directamente.
+
+### Para nuestro caso serán las siguientes equivalencias
+* Clases - Tablas
+* Atributos - Columnas
+* Intancias - Filas
+
+## Configuración de las migraciones
+```
+python manage.py migrate
+```
+Con esto se crea todo lo relacionado a los ```auth``` y ```admin``` en la base de datos.
+
+## Uso en Django
+Se debe hacer todo esto en el archivo ```models.py``` con esto se harán clases que siempre deben heredar a ```models.Model```, como ejemplo tenemos algo así sería para crear dos tablas:
+```
+from django.db import models
+
+# Create your models here.
+class Author(models.Model):
+    name = models.CharField(max_length=100) # Maximo 100 letras para este campo
+    birth_date = models.DateField(null=True, blank=True) # Se puede dejar vacío
+
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    publicaction_date = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author, on_delete=models.CASCADE, related_name = 'books')
+    pages = models.IntegerField()
+    isbn = models.CharField(max_length=50)
+```
+Posteriormente hay que ejecutar en la terminal:
+```
+python manage.py makemigrations app_name
+```
+Esto sirve para crear la equivalencia en SQL. Es en sí un paso previo, aquí todavía no podríamos ver estas tablas en la base de datos.
+
+Para revisar las migraciones tenemos el comando:
+```
+python manage.py showmigrations
+```
+
+Para ya subirlo a la base de datos se debe ejecutar:
+```
+python manage.py migrate
+```
+Básicamente teniendo doble función, para inicializar y para actualizar.
+
+## Django shell
+Es una consola integrada al proyecto.
+
+# Algunos comandos de SQLite:
+Para buscar similares:
+```
+SELECT * FROM tabla WHERE columna LIKE "%palabra%"
+```
+Los porcentajes sirven para indicar si queremos buscar entre palabras, por ejemplo en medio de, antes de o después de.
+
+Consultas anidadas:
+```
+SELECT columna1 FROM tabla1 WHERE columna2 = (
+    SELECT columna_relacionada FROM tabla 2 WHERE columna3 = "cosa"
+);
+```
+
 # Algunos comandos de terminal útiles
 Para leer el txt en la terminal:
 ```

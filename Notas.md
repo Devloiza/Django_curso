@@ -497,7 +497,282 @@ python manage.py migrate
 Básicamente teniendo doble función, para inicializar y para actualizar.
 
 ## Django shell
-Es una consola integrada al proyecto.
+Es una consola integrada al proyecto, y se puede acceder a ella con esto:
+```
+python manage.py shell
+```
+
+### Instalación recomendada para ver mejor la terminal
+```
+pip install ipython
+```
+
+### Para usar el Shell
+#### Creando registros:
+Podemos hacer algo como lo siguiente, primero importando nuestra tabla y posteriormente creando filas:
+```
+from app.models import tabla
+
+# Para crear la fila asignando valores a las columnas respectivamente
+class.objects.create(col1=None, col2=None)
+```
+Otra forma de hacerlo es usando la instancia, o  en otras palabras, inicializamos la clase pero la guardamos hasta después:
+```
+variable = class(col1 = None, col2 = None)
+```
+Para guardarla:
+```
+variable.save()
+```
+Con esto ya se guarda directamente en la base de datos.
+
+#### Creando regustros en lote
+Se usa:
+```
+class.objects.bulk_create([])
+```
+Para esto se va a tener que instanciar la clase, aquí un ejemplo:
+```
+In [16]: Book.objects.bulk_create([
+    ...: Book(title=" Me enamore de su software", publication_date = "2025-01-01", author = cuellar, pages = 250, isbn = "1234659845"),
+    ...: Book(title="Harry Potter y el prisionero de Ecatepec", publication_date = "2025-05-11", author = cuellar, pages = 550, isbn = "165465435")])
+```
+Lo veo como primero, apuntar a la tabla y decir que van muchos registros. Y posteriormente creando las clases se mandan todas las variables de golpe.
+
+**Es importante notar que se pueden usar variables, como en este caso autor ya estaba instanciado en otra variable**
+
+#### Para crear datos de forma segura
+Con segura nos referimos a evitar duplicados, para obtener o crear se usa:
+```
+variable = class.objects.get_or_create(col = None, defaults={"col_n": None})
+```
+Se puede verificar con un print (Esto hay que verificar que no sea gracias al ```__str__``` modificado).
+
+Otra cosa que se puede hacer es actualizar o crear:
+```
+variable = class.objects.update_or_create(col = None, defaults={"col_n": None})
+```
+
+#### Consultas con el Shell
+##### Para todo
+```
+class.objects.all()
+```
+
+##### Por columna específica
+En este caso si se guarda en una variable obtenemos el registro en sí:
+```
+variable = class.objects.get(col = None)
+```
+
+##### El primero y último
+```
+class.objects.first()
+class.objects.last()
+```
+
+#### Ordenando objectos
+Se puede tanto ascendente como descendente:
+```
+class.objects.order_by('col_name') # Ascendente
+class.objects.order_by('-col_name') # Descendente
+```
+
+Se puede por más de una columna, lo hará en orden de aparición. Se pueden usar tanto ascendentes como descendentes y sus combinaciones:
+```
+class.objects.order_by('col_name1', 'col_name2') 
+```
+
+Se puede ordenar al azar:
+```
+class.objects.order_by('?') 
+```
+
+#### Filtros
+Para hacerlo se tiene que usar de la siguiente manera:
+```
+variable = class.objects.filter(col=None)
+```
+##### Campos de busqueda
+Es como darle superpoderes a la busqueda, por ejemplo:
+**NOTA: Se debe poner con doble guión bajo**
+```
+# Ejemplo
+class.objects.filter(col__exact = None)
+
+# Estructura general:
+class.objects.filter(col__campo = None)
+```
+Aquí están todos los que se puden invocar: https://www.w3schools.com/django/django_ref_field_lookups.php **(Está bastante bien explicado en este enlace)**
+
+Algunos de filtros vistos en la sección:
+```
+# Por lista
+class.objects.filters(col__in = [lista])    # Devuelve aquellos dentro de la lista
+
+# Numéricos
+class.objects.filter(col__gt = numero)     # Devuelve aquellos mayores que el número umbral
+class.objects.filter(col__gte = numero)    # Devuelve aquellos mayores o iguales que el número umbral
+class.objects.filter(col__lt = numero)     # Devuelve aquellos menores al número umbral
+class.objects.filter(col__lte = numero)    # Devuelve aquellos menores o iguales al número umbral
+
+# Por fecha, requiere para buscar: from datetime import date
+NOTA: En estos también se puede usar lo de mayor y menor que.
+
+## Fecha completa
+class.objects.filter(col__date = date(year, month, day))   # Si no es una fecha por defecto
+class.objects.filter(col = date(year, month, day))         # Si es una fecha por defecto
+
+## Por algo específico de la fecha
+class.objects.filter(col__year = year)     # Busca por año específico
+class.objects.filter(col__month = month)   # Busca por mes específico
+class.objects.filter(col__day = day)       # Busca por día específico
+
+```
+
+Para encadenar filtros sólo se debe seguir poniendo en la línea de código:
+```
+# Con varios filtros:
+class.objects.filter(col1__lt = None).filter(col2 = None)
+
+# Combinando filtro y exclusion:
+class.objects.filter(col1 = None).exclude(col2 = None)
+```
+
+Se pueden hacer list slicing:
+```
+# Desde el primer hasta el quinto registro
+class.objects.all()[0:5]
+
+# Desde el quinto hasta el décimo:
+class.objects.all()[5:10]
+```
+
+Al final de estos se le puede añadir ```.exists()``` y nos regresa un ```bool```, por ejemplo:
+```
+class.objects.filter(col__strartswith = "Algo").exists()
+```
+
+
+##### Sensitve e insensitive
+Hay dos formas de buscarlo, la sensitive, que sería tal cuál está:
+```
+class.objects.filter(col__cosa = None)
+```
+Y la insensitive, que sería más permisiva (ignora mayúsculas y minúsculas):
+```
+class.objects.filter(col_icosa = None)
+```
+##### Consulta avanzada Q (Query):
+Permite usar operaciones lógicas entre la busqueda, se debe importar primero:
+```
+from django.db.models import Q
+
+class.objects.filter(
+    Q(col1__filtro1 = None) | Q(col2__filtro2 = None)
+)
+```
+
+Ejemplo en una tabla relacional:
+```
+from django.db.models import Q
+
+Book.objects.filter(Q(title__icontains = "prisionero") & Q(author__name__icontains = "Ricardo"))
+```
+En este ejemplo estamos filtrando que la tabla ```Book``` en la columna 'title' contenga permisivamente "prisionero" y que en la tabla ```Author``` en la columna 'name' contenga permisivamente "Ricardo". Es importante notar que la tabla ```Book``` está relacionada con la tabla ```Author```.
+
+|Simbolo|Significado|
+|:-:|:-:|
+|\||or|
+|&|and|
+
+
+##### Consulta avanzada F (Field)
+Igualmente, se debe importar primero:
+```
+from django.db.models import F
+
+class.object.filter(col_1__filtro_numérico = F('colimna'))
+```
+
+#### Actualización de registros:
+Se debe obtener el registro con ```get```, hacemos la modificación a la columna correspondiente y posteriormente lo guardamos.
+```
+variable = class.objects.get(col = None)
+variable.col = None # Nuevo valor
+variable.save()
+```
+
+También se pueden actualizar registros en lotes agregando al filtro ```.update()```:
+```
+class.objects.filter(col1 = None).update(col2 = None)
+```
+Esto devuelve el número de modificaciones hechas.
+
+#### Eliminar registros:
+Para eliminar de uno:
+```
+variable = class.objects.get(col = None)
+variable.delete()
+```
+
+Para eliminar por lote:
+```
+class.objects.filter(col1 = None).delete()
+```
+**Nota: Para esto se recomienda primero hacer el filtro y despiés hacer el delete, de esta manera tenemos menos probabilidad de equivocarnos**
+
+Para los casos en los que se borran los datos hay varias opciones pero ya dependerá de la lógica que se use para disernir cuál será la mejor opción.
+
+Existe también el ```soft delete``` que sirve para en sí no borrar los datos pero sí ocultarlos del sistema.
+
+#### Eliminar registros con relaciones:
+Básicamente es lo mismo que obtener el registro y posteriormente usar ```delete()```. Ya dependerá de si está modelado con ```on_delete = models.CASCADE```
+
+#### Aggregates
+Son funciones adicionales a SQL, se deben importar:
+```
+from django.db.models import Count, Avg, Sum, Min, Max
+
+# Se usan así:
+class.objects.aggregate(col_new = Count(col1))
+class.objects.aggregate(col_new = Min(col1))
+```
+Esto va a crear un diccionario con las keys de las ```col_new``` que utilicemos. Básicamente son como consultas de forma general.
+
+#### Annotations
+Agrega una columan virtual a cada una de las instancias de la consulta:
+```
+from django.db.models import Count
+
+# Se usa asi:
+variable = class.objects.annotate(col_new = Count(related_name))
+```
+
+El ```related_name``` es una variable que se asigna en el modelado de la tabla, es como una forma en la que se comunican las dos tablas relacionadas. Es como una consulta anidada.
+
+#### Transaction Atomic
+Es un conjunto de opereaciones que deben de ejecutarse todas juntas, si una falla todo se echa para atrás y no se ejecuta ninguna.
+
+Su misión es proteger la integridad de los datos.
+
+Se debe importar antes de usarse
+```
+from django.db import transaction
+
+with transaction.atomic():
+    variable = class1.objects.create(col1 = None)
+    class2.objects.create(col1 = None, col2 = None, col3 = variable)
+
+
+```
+Este genera un ```IntegrityError``` pero si se quiere usar se debe importar como:
+```
+from django.db import IntegrityError
+```
+
+Se ve que es como un ```try``` pero explicitamente no lo es, incluso se puede combinar con un ```try-except```
+
 
 # Algunos comandos de SQLite:
 Para buscar similares:

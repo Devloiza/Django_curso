@@ -447,6 +447,7 @@ Es el proceso de representar estructuradamente la información de un sistema, an
 |Atributo|Característica o propiedad de una entidad|Book.title, Author.name |
 |Relación|Asociación entre entidades|Un Book está escrito por un Author|
 
+# Sección 8: Manipulación de datos con el ORM
 ## ORM (Object-Relational Mapping)
 Es como un traductor de un lenguaje de programación a SQL directamente.
 
@@ -773,6 +774,214 @@ from django.db import IntegrityError
 
 Se ve que es como un ```try``` pero explicitamente no lo es, incluso se puede combinar con un ```try-except```
 
+# Sección 9. Relaciones entre modelos
+## Qué es
+En una base de datos relacional, una relación es una conexión lógica entre dos o más entidades, basado en datos compartidos.
+Esto permite: 
+- Evitar el duplicado de los datos.
+- Organizar la información de forma modular.
+- Consultar datos relacionados fácilmente.
+
+## Tipos de relaciones
+*Uno a Uno (1:1)*
+- Cada registro de la tabla A tiene exactamente un registro de la tabla B y al revés.
+- Se usa cuando se tienen datos opcionales o extendidos.
+
+*Uno a Muchos (1:N)*
+- Un registro de la tabla A puede tener muchos en la tabla B pero cada registro de B pertenece a uno sólo de A.
+- Se usa cuando un dato puede tener muchas opciones de otro tipo de dato.
+
+*Muchos a Muchos (N:M)*
+- Un registro de la tabla A puede tener muchos en la tabla B y al revés. Se necesita una tabla intermedia que Django ya crea por nosotros.
+- Se usa para relacionar muchos tipos de datos.
+
+## Conceptos importantes relacionados
+### Foreign Key
+Campo que apunta a otro modelo y crea una relación uno a muchos.
+```
+class NameClass(models.Model):
+    instance_relacional = models.ForeigKey(class2)
+```
+
+### on_delete
+Atributo quenos ayudará a definir que sucederá cuando eliminemos un registro relacionado.
+```
+class NameClass(models.Model):
+    instance_relacional = models.ForeigKey(class2, on_delete=models.CASCADE)
+```
+
+| Argumento | ¿Qué hace? |
+|---|---|
+| `CASCADE` | Elimina en cascada todos los objetos relacionados cuando se elimina el objeto referenciado. |
+| `PROTECT` | Lanza una excepción `ProtectedError` e impide la eliminación si existen objetos relacionados. |
+| `RESTRICT` | Similar a `PROTECT`, pero lanza `RestrictedError`. Permite la eliminación si el objeto relacionado también será eliminado en la misma operación. |
+| `SET_NULL` | Establece el campo como `NULL` al eliminar el objeto referenciado. Requiere que el campo tenga `null=True`. |
+| `SET_DEFAULT` | Asigna el valor por defecto del campo al eliminar el objeto referenciado. El campo debe tener un `default` definido. |
+| `SET()` | Asigna un valor específico o el resultado de una función callable al eliminar el objeto referenciado. Ej: `SET(0)` o `SET(get_default)`. |
+| `DO_NOTHING` | No hace nada a nivel de Django. Puede causar errores de integridad referencial en la base de datos si no se maneja a nivel de SQL. |
+
+### related_name
+Es para tener el nombre con el que accederemos desde la clase **A** a la clase **B**.
+```
+class NameClass(models.Model):
+    instance_relacional = models.ForeigKey(class2, on_delete=models.CASCADE, related_name = "nombre_acceso")
+```
+*Esto es una relación uno a muchos*, en un ejemplo de uso tenemos algo asi:
+De la clase ```Author``` salen ```Books```, pero para poder acceder a ```Books``` desde ```Author```
+```
+# Primero asignamos la fila a la variable
+author = Author.objects.get(name = Autor)
+
+# Después extraemos los libros relacionados a ese autor
+author.books.all()
+```
+
+### uniques
+Hace que el campo no se pueda repetir
+```
+class NameClass(models.Model):
+    instance = models.CharField(unique = True)
+```
+
+## Relaciones
+### Uno a muchos
+Se usa el ForeignKey o para Django el related name. Ver más arriba en caso de dudas.
+Para ejemplificarlo tenemos la siguiente tabla:
+```
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    publication_date = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author, on_delete=models.CASCADE, related_name = 'books')
+    pages = models.IntegerField()
+    isbn = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.title
+```
+
+### Muchos a muchos
+Primero se deben crear ambas tablas para que funcione, y deben ser algo como esto:
+```
+class Genre(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    publication_date = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author, on_delete=models.CASCADE, related_name = 'books')
+    pages = models.IntegerField()
+    isbn = models.CharField(max_length=50)
+
+    genres = models.ManyToManyField(Genre, related_name = 'books')
+    def __str__(self):
+        return self.title
+``` 
+Aquí la parte clave está en la tabla ```Book```, ya que es donde se establece la relación ```models.ManyToManyField```. Esto en la base de datos creará una nueva tabla donde se relacionarán los ```ids```.
+
+### Uno a uno
+Se puede usar para extender una tabla sin que directamente se sobrecargue, como ejemplo tenemos:
+```
+class BookDetail(models.Model):
+    summary = models.TextField()
+    cover_url = models.CharField()
+    language = models.CharField()
+    book = models.OneToOneField(Book, on_delete=models.CASCADE, realted_name = 'detail')
+```
+
+### select_related
+**Sólo se puede usar con objetos ONE to ONE y ONE to MANY**
+Para cargar los objetos relacionados en una sola consulta, optimiza las peticiones a la base de datos:
+```
+variable = class.objects.select_related("columna")
+
+for var in variable:
+    print(var.col.cosa)
+```
+
+### prefetch_related
+**Sólo se puede usar con objetos MANY to MANY**
+Es simnilar al select_related pero tiene su diferencia sobre que hay que acceder puntualmente:
+```
+variable = class.objects.prefetch_related("columna")
+
+for var in variables:
+    variable2 = var.col.all()
+    print(variable2)
+```
+
+### Trough
+Es la tabla que se crea en el intermedio de dos relaciones con los IDs, pero algunas veces querremos modificar algunas cosas:
+```
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    publication_date = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author, on_delete=models.CASCADE, related_name = 'books')
+    pages = models.IntegerField()
+    isbn = models.CharField(max_length=50)
+
+    ## Modelado Muchos a Muchos
+    genres = models.ManyToManyField(Genre, related_name = 'books')
+    
+    ## Tabla intermedia personalizada
+    recommended_by = models.ManyToManyField(get_user_model(), through="Recomendation", related_name="recommendations")
+
+    def __str__(self):
+        return self.title
+
+class Recomendation(models.Model):
+    user = models.ForeignKey(get_user_model, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    recommended_at = models.DateField(auto_now_add=True)
+    note = models.TextField(blank=True)
+
+    # Esto funciona como un settings, es una clase de configuración:
+    class Meta:
+        unique_together = ("user", "book")
+```
+Hacer esto nos bloquea usar los métodos ```add()``` y ```remove()```. Ahora se usa como una tabla normal.
+
+### Seeds
+Se debe crear la carpeta ```seeds/``` con el archivo ```seed.py```.
+
+Se debe usar este comando en windows:
+```python manage.py shell -c "exec(open('seeds/seed.py', encoding='utf-8').read())```
+
+## Modelo USER
+Modelo de usuario por default de Django, se crea en automático.
+
+Se debe acceder a él de la siguiente manera:
+```
+# Forma general
+from django.contrib.auth.models import User
+
+# Forma flexible para que no truene:
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+```
+
+Para inicializar el user con el hash para la contraseña se hace esto:
+```
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+User.objects.create_user()
+```
+
+#### Asignar y obtener valores
+Se debe usar el método ```.add()```, como ejemplo tenemos una variable de la tabla ```Book``` que contiene un libro, y se le añadirán los generos ya establecidos en las variables de ```fiction``` y ```drama```, estos igual se tienen que declarar en la tabla de ```Genres```:
+```
+# Primero se crean o se asignan:
+fiction = Genre.objects.get(name = "fiction")
+
+# Posteriormente se relacionan con el libro
+book.genres.add(fiction, drama)
+```
+Con esto ya podemos relacionar tanto de generos a libros como de libros a generos con su respectivo ```related_name```
 
 # Algunos comandos de SQLite:
 Para buscar similares:

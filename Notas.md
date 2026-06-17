@@ -983,6 +983,365 @@ book.genres.add(fiction, drama)
 ```
 Con esto ya podemos relacionar tanto de generos a libros como de libros a generos con su respectivo ```related_name```
 
+# Sección 10. Django Admin
+Es como un shell pero sin la parte de la terminal explícita. Se debe crear un usuario con permisos de administrador pese a que ya se incluye en la configuración básica de Django, esto se debe hacer en la terminal:
+```
+python manage.py createsuperuser
+```
+Se rellenan los campos y listo. Con esto ya se pueden manipular varias cosas.
+
+## Usar modelos en admin
+Primero debemos ir al archivo ```admin.py``` e importar los modelos que queremos usar:
+```
+from django.contrib import admin
+from .models import Author, Genre, Book, BookDetail, Review, Loans
+
+# Register your models here.
+
+admin.site.register(Author)
+admin.site.register(Genre)
+admin.site.register(Book)
+admin.site.register(BookDetail)
+admin.site.register(Review)
+admin.site.register(Loans)
+```
+Para el admin sí juega un papel importante el metodo ```__str__```, ya que así es como se nos mostrará en la parte visual.
+```
+class Genre(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+```
+Para la parte de darle personalización a los modelos debemos hacer algo como esto:
+```
+from django.contrib import admin
+from .models import Author, Genre, Book, BookDetail, Review, Loans
+
+# Register your models here.
+
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    list_display = ('title', 'author', 'pages', 'publication_date')
+
+    # No olvidar que author es una llave foranea y que con el __ podemos acceder a ella
+    search_fields = ('title', 'author__name') 
+    
+    list_filter = ('author', 'genres', 'publication_date')
+
+    # Ordenar, de forma decendente (usa lista)
+    ordering = ['-publication_date'] 
+
+    date_hierarchy = 'publication_date'
+
+# Asi se registra en el admin el modelo deseado
+admin.site.register(Author)
+admin.site.register(Genre)
+# admin.site.register(Book, BookAdmin) # O con el decorador
+admin.site.register(BookDetail)
+admin.site.register(Review)
+admin.site.register(Loans)
+```
+Para la parte del decorador (```@admin.register(Book)```), también tenemos que modificar el modelo a algo como esto:
+```
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    publication_date = models.DateField(null=True, blank=True)
+    author = models.ForeignKey(
+        Author, on_delete=models.CASCADE, related_name = 'books')
+    pages = models.IntegerField()
+    isbn = models.CharField(max_length=50)
+
+    ## Modelado Muchos a Muchos
+    genres = models.ManyToManyField(Genre, related_name = 'books')
+    
+    ## Tabla intermedia personalizada
+    recommended_by = models.ManyToManyField(get_user_model(), through="Recomendation", related_name="recommendations")
+
+    # Con esto configuramos los settings de la clase. ## ESTO ES LO QUE SE MODIFICA
+    class Meta:
+        verbose_name = 'Libro'
+        verbose_name_plural = 'Libros'
+
+    def __str__(self):
+        return self.title
+```
+
+## Registros inline
+Son registros relacionados. (UNO a UNO / UNO a MUCHOS (ForeignKey)), esto debe ir en ```admin.py```:
+```
+from django.contrib import admin
+from .models import Author, Genre, Book, BookDetail, Review, Loans
+
+# Register your models here.
+
+## Inline One to many
+class ReviewInline(admin.TabularInline):
+    model = Review
+    extra = 1
+
+## Inline One to One
+class BookDetailInline(admin.StackedInline):
+    model = BookDetail
+    can_delete = False
+    verbose_name_plural = "Detalle del libro"
+
+## Registro de modelos
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    # Inline
+    inlines = [ReviewInline, BookDetailInline]
+
+    list_display = ('title', 'author', 'pages', 'publication_date')
+
+    # No olvidar que author es una llave foranea y que con el __ podemos acceder a ella
+    search_fields = ('title', 'author__name') 
+    
+    list_filter = ('author', 'genres', 'publication_date')
+
+    # Ordenar, de forma decendente (usa lista)
+    ordering = ['-publication_date'] 
+
+    date_hierarchy = 'publication_date'
+
+
+admin.site.register(Author)
+admin.site.register(Genre)
+# admin.site.register(Book, BookAdmin)
+
+admin.site.register(BookDetail)
+admin.site.register(Review)
+admin.site.register(Loans)
+```
+
+## Inlines en modelos de Django
+Se debe hacer algo como esto, por ejemplo para la parte del user:
+```
+from django.contrib import admin
+from .models import Author, Genre, Book, BookDetail, Review, Loans
+
+## Se deben importar estos de Django
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+# Register your models here.
+
+## Inline a User (default de Django)
+User = get_user_model()
+class LoanInline(admin.TabularInline):
+    model = Loans
+    extra = 1
+
+# Más modificaciones 
+@admin.register(Loans)
+class LoanAdmin(admin.ModelAdmin):
+    readonly_fields = ("loan_date",)
+    list_display = ("user", "book", "loan_date", "is_returned")
+
+
+## Inline One to many
+class ReviewInline(admin.TabularInline):
+    model = Review
+    extra = 1
+
+## Inline One to One
+class BookDetailInline(admin.StackedInline):
+    model = BookDetail
+    can_delete = False
+    verbose_name_plural = "Detalle del libro"
+
+## Creando el custom admin
+class CustomUserAdmin(BaseUserAdmin):
+    inlines = [LoanInline]
+    list_display = ("username", "email")
+
+## Registro de modelos
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    readonly_fields = ("pages",)
+    # Inline
+    inlines = [ReviewInline, BookDetailInline]
+
+    list_display = ('title', 'author', 'pages', 'publication_date')
+
+    # No olvidar que author es una llave foranea y que con el __ podemos acceder a ella
+    search_fields = ('title', 'author__name') 
+    
+    list_filter = ('author', 'genres', 'publication_date')
+
+    # Ordenar, de forma decendente (usa lista)
+    ordering = ['-publication_date'] 
+
+    date_hierarchy = 'publication_date'
+
+    fieldsets = (
+        ("Información general",{
+            "fields": ("title", "author", "publication_date", "genres"),
+        }),
+        ("Detalles", {
+            "fields": ("isbn", "pages"),
+            "classes": ("collapse",)
+        }
+        )
+    )
+
+admin.site.register(Author)
+admin.site.register(Genre)
+# admin.site.register(Book, BookAdmin)
+admin.site.register(BookDetail)
+admin.site.register(Review)
+# admin.site.register(Loans)
+
+## Desregistrar y volcer a asignar
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered: 
+    pass
+
+admin.site.register(User, CustomUserAdmin)
+```
+
+## Actions
+Sirve para ejecutar funciones sobre varios registros seleccionados.
+Primero se debe poner el decorador ```@admin.action```:
+```
+# Aquí tenemos el action
+@admin.action(description="Marcar préstamos como devueltos")
+def mark_as_returned(modeladmin, request, queryset):
+    queryset.update(is_returned = True)
+
+
+class LoanInline(admin.TabularInline):
+    model = Loans
+    extra = 1
+
+# Más modificaciones 
+@admin.register(Loans)
+class LoanAdmin(admin.ModelAdmin):
+    readonly_fields = ("loan_date",)
+    list_display = ("user", "book", "loan_date", "is_returned")
+    actions = [mark_as_returned]
+```
+En la parte de hacer el action debemos forzosamente poner el ```modeladmin``` y el ```request```.
+
+## Autocomplete Field
+Sirve para generar una forma más rápida de rellenar los registros, no es directamente un autocompletado pero sí es mucho más fácil organizar entre tantas opciones:
+```
+@admin.register(Author)
+class AuthorAdmin(admin.ModelAdmin):
+    search_fields = ["name"]
+
+@admin.register(Genre)
+class GenreAdmin(admin.ModelAdmin):
+    search_fields = ["name"]
+
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    readonly_fields = ("pages",)
+    # Inline
+    inlines = [ReviewInline, BookDetailInline]
+
+    list_display = ('title', 'author', 'pages', 'publication_date')
+
+    # No olvidar que author es una llave foranea y que con el __ podemos acceder a ella
+    search_fields = ('title', 'author__name') 
+    
+    list_filter = ('author', 'genres', 'publication_date')
+
+    # Autocomplete field
+    autocomplete_fields = ["author", "genres"] # Para que esto funcione debemos crear el AuthorAdmin
+
+    # Ordenar, de forma decendente (usa lista)
+    ordering = ['-publication_date'] 
+
+    date_hierarchy = 'publication_date'
+
+    fieldsets = (
+        ("Información general",{
+            "fields": ("title", "author", "publication_date", "genres"),
+        }),
+        ("Detalles", {
+            "fields": ("isbn", "pages"),
+            "classes": ("collapse",)
+        }
+        )
+    )
+```
+Otra opción es usar el ```raw_id```:
+```
+@admin.register(Loans)
+class LoanAdmin(admin.ModelAdmin):
+    readonly_fields = ("loan_date",)
+    list_display = ("user", "book", "loan_date", "is_returned")
+    actions = [mark_as_returned]
+    raw_id_fields = ["user", "book"]
+```
+Esto es básicamente similar pero está más aislado, creo que sólo seria conveniente si hay demasiados que de plano sea más sencillo buscarlo directamente en la base de datos.
+
+## Seguridad, acceso y grupos
+Para establecer roles, se puede hacer directo desde el admin de Django creando el usuario y posteriormente asignando los premisos a él o al grupo al que pertenecerá.
+O también se puede por código, esto s recomienda especialmente si son cosas que queremos estar 100% seguros que deben ser así:
+```
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    readonly_fields = ("pages",)
+    # Inline
+    inlines = [ReviewInline, BookDetailInline]
+
+    list_display = ('title', 'author', 'pages', 'publication_date')
+
+    # No olvidar que author es una llave foranea y que con el __ podemos acceder a ella
+    search_fields = ('title', 'author__name') 
+    
+    list_filter = ('author', 'genres', 'publication_date')
+
+    # Autocomplete field
+    autocomplete_fields = ["author", "genres"] # Para que esto funcione debemos crear el AuthorAdmin
+
+    # Ordenar, de forma decendente (usa lista)
+    ordering = ['-publication_date'] 
+
+    date_hierarchy = 'publication_date'
+
+    fieldsets = (
+        ("Información general",{
+            "fields": ("title", "author", "publication_date", "genres"),
+        }),
+        ("Detalles", {
+            "fields": ("isbn", "pages"),
+            "classes": ("collapse",)
+        }
+        )
+    )
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj = None):
+        return request.user.is_staff
+```
+
+## Brandig personalizado
+Las cosas como el idioma u hora se deben hacer directamente en el ```settings.py``` del proyecto.
+Para la parte de los títulos y esas cosas relacionadas a Django:
+```
+from django.contrib import admin
+from .models import Author, Genre, Book, BookDetail, Review, Loans
+
+## Se deben importar estos de Django
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+
+
+# Register your models here.
+admin.site.site_header = "Administrador MiniLibrary"
+admin.site.site_title = "MiniLibrary panel"
+admin.site.index_title = "Bienvenidos al panel de MiniLibrary"
+```
+
+Para más información se puede consultar siguiente enlace: https://docs.djangoproject.com/es/6.0/ref/django-admin/
+
 # Algunos comandos de SQLite:
 Para buscar similares:
 ```

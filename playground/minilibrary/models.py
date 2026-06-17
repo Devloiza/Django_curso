@@ -12,6 +12,8 @@ class Author(models.Model):
 class Genre(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
+    def __str__(self):
+        return self.name
 
 class Book(models.Model):
     title = models.CharField(max_length=200)
@@ -26,6 +28,11 @@ class Book(models.Model):
     
     ## Tabla intermedia personalizada
     recommended_by = models.ManyToManyField(get_user_model(), through="Recomendation", related_name="recommendations")
+
+    # Con esto configuramos los settings de la clase.
+    class Meta:
+        verbose_name = 'Libro'
+        verbose_name_plural = 'Libros'
 
     def __str__(self):
         return self.title

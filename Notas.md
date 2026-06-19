@@ -1342,6 +1342,103 @@ admin.site.index_title = "Bienvenidos al panel de MiniLibrary"
 
 Para más información se puede consultar siguiente enlace: https://docs.djangoproject.com/es/6.0/ref/django-admin/
 
+# Sección 11. Filtros, busquedas
+Básicamente todo lo de la sección se condensa en las siguientes lineas de código:
+En ```views.py```
+```
+from django.shortcuts import render
+from django.http import HttpResponseNotFound
+from .models import Book
+from django.db.models import Q
+from django.core.paginator import Paginator
+
+# Create your views here.
+def index(request):
+    try:
+        books = Book.objects.all()
+        query = request.GET.get("query_search")
+
+        # Filtro por fecha
+        date_start = request.GET.get("start")
+        date_end = request.GET.get("end")
+
+        # Filtrado con Q
+        if query:
+            books = books.filter(
+                Q(title__icontains=query) | Q(author__name__icontains = query)
+            )
+
+        # Filtrado por fecha 2
+        if date_start and date_end:
+            books = books.filter(publication_date__range= [date_start, date_end])
+
+        # Paginación
+        paginator = Paginator(books,5)
+        page_number = request.GET.get("page")
+        
+        # Se encarga de manejar la página, incluidos errores.
+        page_obj = paginator.get_page(page_number)
+
+        query_params = request.GET.copy()
+        if "page" in query_params:
+            query_params.pop("page")
+
+        query_string = query_params.urlencode()
+
+        return render(request, "minilibrary/minilibrary.html", {
+            "page_obj": page_obj,
+            "query": query,
+            "query_string": query_string
+        })
+    except Exception:
+        return HttpResponseNotFound("Página no encontrada")
+```
+En ```archivo.html```
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Minilibrary page</h1>
+    <h2>Hola mundo desde Minilibrary</h2>
+
+    <form method = "get">
+        <input type="text" name = "query_search" placeholder = "Buscar por título o autor" value = "{% if query %}{{query}}{% endif %}">
+        <input type="date" name="start" value = {{request.GET.start}}>
+        <input type="date" name = end value = {{request.GET.end}}>
+        <button type="submit">Enviar</button>
+    </form>
+    <ul>
+        
+        {% for book in page_obj %}
+            <li>{{book.title}} - {{book.author.name}} - {{book.publication_date}}</li>
+        {% empty %}
+            <li>No se encontraron libros</li>
+        {% endfor %}
+            
+    </ul>
+
+    <div>
+        
+        {% if page_obj.has_previous %}
+            <a href="?page=1&{{query_string}}">Primera</a>
+            <a href="?page={{page_obj.previous_page_number}}&{{query_string}}">Anterior</a>
+        {% endif %}
+            
+        <span>Página {{page_obj.number}} de {{page_obj.paginator.num_pages}}</span>
+        {% if page_obj.has_next %}
+            <a href="?query_search={{query}}&page={{page_obj.next_page_number}}">Siguiente</a>
+            <a href="?query_search={{query}}&page={{page_obj.paginator.num_pages}}">Última</a>
+        {% endif %}
+    </div>
+</body>
+</html>
+```
+
 # Algunos comandos de SQLite:
 Para buscar similares:
 ```

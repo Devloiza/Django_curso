@@ -10,7 +10,7 @@
 - [x] Sección 8
 - [x] Sección 9
 - [x] Sección 10
-- [ ] Sección 11
+- [x] Sección 11
 - [ ] Sección 12
 - [ ] Sección 13
 - [ ] Sección 14
